@@ -77,6 +77,14 @@ nav button.on{color:var(--a2)}
 #toast.show{opacity:1}
 .nudge{background:var(--line);border-radius:14px;padding:12px;margin-bottom:14px}
 .nudge .btn{margin-top:10px;min-height:44px}
+.tap{cursor:pointer}.tap:active{opacity:.7}
+.dr{display:flex;justify-content:space-between;align-items:flex-start;padding:11px 0;border-top:1px solid var(--line)}
+.dr:first-of-type{border-top:0}
+.dr .k{color:var(--mu);margin-right:16px;flex:0 0 auto}
+.dr .v{text-align:right;min-width:0;word-break:break-word;font-weight:600}
+.dhead{text-align:center;padding:4px 0 14px}
+.dhead .em{font-size:34px}
+.dhead .amt{font-size:26px;font-weight:800;margin-top:4px}
 
 [data-p=sensei]{--bg:#f5f6fa;--card:#ffffff;--line:#e8ebf3;--tx:#1d2233;--mu:#7f87a3;--a1:#5b5ef0;--a2:#22c1a0;--a3:#ff8fab;--a4:#ffb648;--bad:#e5484d}
 [data-p=sensei-dark]{--bg:#0f1117;--card:#181b25;--line:#272b39;--tx:#f2f4fa;--mu:#8a90a6;--a1:#6c6ff5;--a2:#2dd4bf;--a3:#ff8fab;--a4:#ffb648;--bad:#fb7185}
@@ -137,7 +145,7 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.3em}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 // 1) Paste your Supabase values here (Project Settings > API)
-var CFG={url:'https://beinbnnbasuwbjgoucnw.supabase.co/rest/v1/',key:'sb_publishable_8ALfqZp79BRAohGkWahB8Q_V1QztIhw'};
+var CFG={url:'YOUR_SUPABASE_URL',key:'YOUR_SUPABASE_ANON_KEY'};
 
 var $=function(s){return document.querySelector(s)};
 var pad=function(n){return(n<10?'0':'')+n};
@@ -177,7 +185,8 @@ var catOf=function(id){return S.cats.find(function(c){return c.id===id})||{name:
 var sum=function(a){return a.reduce(function(t,x){return t+Number(x.amount)},0)};
 var inRange=function(a,b){return S.exp.filter(function(x){return x.spent_on>=a&&x.spent_on<=b})};
 var weekSpent=function(m){return sum(inRange(ymd(m),ymd(addDays(m,6))))};
-var extraIn=function(a,b){return sum(S.inc.filter(function(x){return x.received_on>=a&&x.received_on<=b}))};
+var wdIn=function(a,b){return -sum(S.sav.filter(function(x){var d=ymd(new Date(x.created_at));return Number(x.amount)<0&&d>=a&&d<=b}))};
+var extraIn=function(a,b){return sum(S.inc.filter(function(x){return x.received_on>=a&&x.received_on<=b}))+wdIn(a,b)};
 var weekBudget=function(m){return Number(S.set.weekly_budget)+extraIn(ymd(m),ymd(addDays(m,6)))};
 
 /* ---------- views ---------- */
@@ -217,10 +226,10 @@ function history(){
     if(it.d!==cur){cur=it.d;var d=parse(cur),sp=sum(S.exp.filter(function(y){return y.spent_on===cur}));
       out+='<div class="day"><span>'+DN[(d.getDay()+6)%7]+' '+short(d)+'</span><span>'+(sp?money(sp):'')+'</span></div>'}
     if(it.k==='i'){
-      out+='<div class="item card" style="padding:8px 12px;margin-bottom:8px"><div class="em">💰</div><div class="t"><span>'+esc(x.note||'Extra money')+'</span>'+(x.note?'<span class="mu">Extra money</span>':'')+'</div><div class="amt" style="color:var(--a2)">+'+money(x.amount)+'</div><button class="ib" onclick="editInc('+x.id+')">✎</button><button class="ib" onclick="delInc('+x.id+')">✕</button></div>';
+      out+='<div class="item card tap" onclick="viewInc('+x.id+',event)" style="padding:8px 12px;margin-bottom:8px"><div class="em">💰</div><div class="t"><span>'+esc(x.note||'Extra money')+'</span>'+(x.note?'<span class="mu">Extra money</span>':'')+'</div><div class="amt" style="color:var(--a2)">+'+money(x.amount)+'</div><button class="ib" onclick="editInc('+x.id+')">✎</button><button class="ib" onclick="delInc('+x.id+')">✕</button></div>';
     }else{
       var c=catOf(x.category_id);
-      out+='<div class="item card" style="padding:8px 12px;margin-bottom:8px"><div class="em">'+c.emoji+'</div><div class="t"><span>'+esc(x.note||c.name)+'</span>'+(x.note?'<span class="mu">'+esc(c.name)+'</span>':'')+'</div><div class="amt">'+money(x.amount)+'</div><button class="ib" onclick="editExp('+x.id+')">✎</button><button class="ib" onclick="delExp('+x.id+')">✕</button></div>';
+      out+='<div class="item card tap" onclick="viewExp('+x.id+',event)" style="padding:8px 12px;margin-bottom:8px"><div class="em">'+c.emoji+'</div><div class="t"><span>'+esc(x.note||c.name)+'</span>'+(x.note?'<span class="mu">'+esc(c.name)+'</span>':'')+'</div><div class="amt">'+money(x.amount)+'</div><button class="ib" onclick="editExp('+x.id+')">✎</button><button class="ib" onclick="delExp('+x.id+')">✕</button></div>';
     }
   });
   return out;
@@ -232,7 +241,7 @@ function stats(){
   var cat=keys.length?keys.map(function(k,i){var c=catOf(+k||null);return '<div class="r"><div class="l"><span>'+c.emoji+' '+esc(c.name)+'</span><span>'+money(by[k])+'</span></div><div class="trk"><i style="width:'+Math.round(by[k]/tot*100)+'%;background:var('+cols[i%4]+')"></i></div></div>'}).join(''):'<p class="mu">Nothing spent yet this week.</p>';
   var weeks=[0,1,2,3,4,5].map(function(i){var m=addDays(mon,-7*i),sp=weekSpent(m),bw=weekBudget(m),over=sp>bw;
     return '<div class="r"><div class="l"><span>'+short(m)+(i===0?' (now)':'')+'</span><span style="color:'+(over?'var(--bad)':'var(--tx)')+'">'+money(sp)+' · '+(over?'over '+money(sp-bw):money(bw-sp)+' left')+'</span></div><div class="trk"><i style="width:'+Math.min(100,sp/bw*100)+'%;background:'+(over?'var(--bad)':'linear-gradient(90deg,var(--a1),var(--a2))')+'"></i></div></div>'}).join('');
-  return '<section class="card bars"><h2>This week by category</h2>'+cat+'</section><section class="card bars"><h2>Last 6 weeks</h2>'+weeks+'<p class="mu">Compared with your weekly budget plus any extra money you got that week.</p></section>';
+  return '<section class="card bars"><h2>This week by category</h2>'+cat+'</section><section class="card bars"><h2>Last 6 weeks</h2>'+weeks+'<p class="mu">Compared with your weekly budget plus any extra money or savings withdrawals that week.</p></section>';
 }
 function savings(){
   var total=sum(S.sav),mon=monday(new Date()),lw=addDays(mon,-7),key=ymd(lw),b=weekBudget(lw);
@@ -242,7 +251,7 @@ function savings(){
   if(S.goal){var p=Math.max(0,Math.min(100,total/S.goal.target*100));
     goal='<section class="card"><h2>🎯 '+esc(S.goal.name)+'</h2><div class="meter"><i style="width:'+p+'%"></i></div><p>'+money(total)+' of '+money(S.goal.target)+(total>=S.goal.target?' – goal reached!':' · '+money(S.goal.target-total)+' to go')+'</p><div class="row2" style="margin-top:12px"><button class="btn alt" style="min-height:44px" onclick="editGoal('+S.goal.id+')">Edit goal</button><button class="btn alt" style="min-height:44px" onclick="delGoal('+S.goal.id+')">Remove goal</button></div></section>';
   }else goal='<section class="card"><h2>Set a savings goal</h2><input id="gn" type="text" maxlength="40" placeholder="What are you saving for?"><input id="gt" type="number" inputmode="decimal" placeholder="Target (Rs.)"><button class="btn" onclick="setGoal()">Set goal</button></section>';
-  var hist=S.sav.slice(0,15).map(function(x){return '<div class="item"><div class="t"><span>'+esc(x.note||(x.amount>0?'Added':'Withdrawn'))+'</span><span class="mu">'+short(new Date(x.created_at))+'</span></div><div class="amt" style="color:'+(x.amount<0?'var(--bad)':'var(--a2)')+'">'+(x.amount>0?'+':'')+money(x.amount)+'</div><button class="ib" onclick="editSav('+x.id+')">✎</button><button class="ib" onclick="delSav('+x.id+')">✕</button></div>'}).join('');
+  var hist=S.sav.slice(0,15).map(function(x){return '<div class="item tap" onclick="viewSav('+x.id+',event)"><div class="t"><span>'+esc(x.note||(x.amount>0?'Added':'Withdrawn'))+'</span><span class="mu">'+short(new Date(x.created_at))+'</span></div><div class="amt" style="color:'+(x.amount<0?'var(--bad)':'var(--a2)')+'">'+(x.amount>0?'+':'')+money(x.amount)+'</div><button class="ib" onclick="editSav('+x.id+')">✎</button><button class="ib" onclick="delSav('+x.id+')">✕</button></div>'}).join('');
   return '<section class="hero"><p class="mu">Saved so far</p><p class="big">'+money(total)+'</p></section>'+nudge+goal
    +'<section class="card"><h2>Add or withdraw</h2><input id="sa" type="number" inputmode="decimal" placeholder="Amount (Rs.)"><input id="sn" type="text" maxlength="60" placeholder="Note (optional)"><div class="row2"><button class="btn" onclick="savBtn(1)">Add</button><button class="btn alt" onclick="savBtn(-1)">Withdraw</button></div></section>'
    +(hist?'<section class="card"><h2>Recent</h2>'+hist+'</section>':'');
@@ -345,6 +354,38 @@ function editCat(id){
     var n=$('#f2').value.trim();if(!n)return toast('Enter a category name');
     done(sb.from('categories').update({name:n,emoji:$('#f1').value.trim()||'💸'}).eq('id',id),'Category updated');
   });
+}
+
+/* ---------- read-only detail popups ---------- */
+var fullDate=function(d){return DN[(d.getDay()+6)%7]+', '+d.getDate()+' '+MN[d.getMonth()]+' '+d.getFullYear()};
+var timeOf=function(d){return d.toLocaleTimeString('en-PK',{hour:'numeric',minute:'2-digit'})};
+var dr=function(k,v){return '<div class="dr"><span class="k">'+k+'</span><span class="v">'+v+'</span></div>'};
+function showDetail(title,em,amtHtml,rows){
+  $('#sheet').innerHTML='<div class="box"><h2>'+title+'</h2><div class="dhead"><div class="em">'+em+'</div><div class="amt">'+amtHtml+'</div></div>'+rows+'<button class="btn alt" style="margin-top:14px" onclick="closeSheet()">Close</button></div>';
+  $('#sheet').className='show';
+}
+function viewExp(id,ev){
+  if(ev&&ev.target.closest('.ib'))return;
+  var x=S.exp.find(function(e){return e.id===id});if(!x)return;
+  var c=catOf(x.category_id);
+  showDetail('Expense',c.emoji,money(x.amount),
+    dr('Category',esc(c.name))+dr('Note',x.note?esc(x.note):'<span class="mu">–</span>')+dr('Date',fullDate(parse(x.spent_on)))
+    +(x.created_at?dr('Added on',fullDate(new Date(x.created_at))+', '+timeOf(new Date(x.created_at))):''));
+}
+function viewInc(id,ev){
+  if(ev&&ev.target.closest('.ib'))return;
+  var x=S.inc.find(function(e){return e.id===id});if(!x)return;
+  showDetail('Extra money','💰','<span style="color:var(--a2)">+'+money(x.amount)+'</span>',
+    dr('Type','Extra money')+dr('Where from',x.note?esc(x.note):'<span class="mu">–</span>')+dr('Date received',fullDate(parse(x.received_on)))
+    +(x.created_at?dr('Added on',fullDate(new Date(x.created_at))+', '+timeOf(new Date(x.created_at))):''));
+}
+function viewSav(id,ev){
+  if(ev&&ev.target.closest('.ib'))return;
+  var x=S.sav.find(function(e){return e.id===id});if(!x)return;
+  var d=new Date(x.created_at),out=Number(x.amount)<0,m=monday(d);
+  showDetail('Savings entry','🐷','<span style="color:'+(out?'var(--bad)':'var(--a2)')+'">'+(out?'':'+')+money(x.amount)+'</span>',
+    dr('Type',out?'Withdrawn':'Added to savings')+dr('Note',x.note?esc(x.note):'<span class="mu">–</span>')+dr('Date',fullDate(d)+', '+timeOf(d))
+    +(out?dr('Week credit','Added to week of '+short(m)+' – '+short(addDays(m,6))):''));
 }
 
 /* ---------- start ---------- */
