@@ -145,7 +145,7 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.3em}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 // 1) Paste your Supabase values here (Project Settings > API)
-var CFG={url:'YOUR_SUPABASE_URL',key:'YOUR_SUPABASE_ANON_KEY'};
+var CFG={url:'https://beinbnnbasuwbjgoucnw.supabase.co/rest/v1/',key:'sb_publishable_8ALfqZp79BRAohGkWahB8Q_V1QztIhw'};
 
 var $=function(s){return document.querySelector(s)};
 var pad=function(n){return(n<10?'0':'')+n};
@@ -159,7 +159,7 @@ var DN=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],MN=['Jan','Feb','Mar','Apr','
 var short=function(d){return d.getDate()+' '+MN[d.getMonth()]};
 var S={tab:'home',set:{weekly_budget:1000,palette:localStorage.getItem('pal')||'sensei'},cats:[],exp:[],inc:[],sav:[],goal:null,cat:null};
 var sb,ready=false;
-var TABS=[['home','🏠','Home'],['history','🧾','History'],['stats','📊','Stats'],['savings','🐷','Savings'],['settings','⚙️','Settings']];
+var TABS=[['home','🏠','Home'],['history','🧾','History'],['stats','📊','Stats'],['savings','🏺','Savings'],['settings','⚙️','Settings']];
 
 function toast(m){var t=$('#toast');t.textContent=m;t.className='show';clearTimeout(toast.t);toast.t=setTimeout(function(){t.className=''},2600)}
 async function q(p){var r=await p;if(r.error){toast(r.error.message);throw r.error}return r.data}
