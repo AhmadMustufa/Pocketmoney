@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pocket">
+<meta name="theme-color" content="#0d0b1a">
+<title>Pocket money</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0b1a;--card:#1a1630;--line:#2a2448;--tx:#f4f2ff;--mu:#9a94c0;--a1:#8b5cf6;--a2:#22d3ee;--a3:#f472b6;--a4:#facc15;--bad:#fb7185}
+[data-p=sunset]{--bg:#140c0c;--card:#261515;--line:#40231f;--tx:#fff3ee;--mu:#c49a8f;--a1:#fb923c;--a2:#f43f5e;--a3:#fbbf24;--a4:#e879f9}
+[data-p=mint]{--bg:#07130f;--card:#0f2620;--line:#1b4036;--tx:#ecfff8;--mu:#8fc4b3;--a1:#34d399;--a2:#2dd4bf;--a3:#a3e635;--a4:#60a5fa}
+[data-p=ocean]{--bg:#08111f;--card:#11223b;--line:#1c3558;--tx:#eef6ff;--mu:#8fadd0;--a1:#38bdf8;--a2:#6366f1;--a3:#22d3ee;--a4:#f0abfc}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--tx);font-family:Sora,-apple-system,Helvetica,sans-serif;font-size:14px}
+#view{max-width:480px;margin:0 auto;padding:16px 16px 84px;padding-top:calc(16px + env(safe-area-inset-top,0px))}
+h2{font-size:15px;margin:0 0 12px;font-weight:600}
+p{margin:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}
+.hero{padding:22px 18px 18px;border-radius:22px;margin-bottom:14px;background:var(--card);border:1px solid var(--line)}
+.hero .big{font-size:40px;font-weight:800;line-height:1.1;margin:6px 0 2px;background:linear-gradient(90deg,var(--a1),var(--a2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hero .big.neg{background:none;-webkit-text-fill-color:var(--bad);color:var(--bad)}
+.mu{color:var(--mu)}
+.meter{height:10px;background:var(--line);border-radius:5px;margin:14px 0 10px;overflow:hidden}
+.meter i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,var(--a1),var(--a2))}
+.meter.over i{background:var(--bad)}
+.strip{display:flex;margin-top:16px}
+.d{flex:1;text-align:center;padding:0 3px}
+.d .bar{height:64px;background:var(--line);border-radius:8px;display:flex;align-items:flex-end;overflow:hidden}
+.d .bar i{display:block;width:100%;background:linear-gradient(0deg,var(--a1),var(--a2))}
+.d.now .bar{outline:2px solid var(--a3)}
+.d b{display:block;margin-top:6px;font-size:12px}
+.d small{color:var(--mu);font-size:11px}
+input{width:100%;min-height:46px;padding:10px 14px;margin-bottom:10px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--tx);font:inherit;font-size:16px;-webkit-appearance:none;appearance:none}
+input:focus{outline:2px solid var(--a1);border-color:transparent}
+.chips{display:flex;flex-wrap:wrap;margin:0 -4px 6px}
+.chip{margin:0 4px 8px;min-height:44px;padding:0 14px;border-radius:22px;border:1px solid var(--line);background:var(--bg);color:var(--tx);font:inherit;font-size:14px}
+.chip.on{background:var(--a1);border-color:var(--a1);color:#fff}
+.btn{width:100%;min-height:48px;border:0;border-radius:14px;background:linear-gradient(90deg,var(--a1),var(--a2));color:#fff;font:inherit;font-weight:600;font-size:16px}
+.btn.alt{background:var(--line);color:var(--tx)}
+.row2{display:flex}.row2 .btn{margin-right:8px}.row2 .btn:last-child{margin-right:0}
+.item{display:flex;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.item:first-of-type{border-top:0}
+.item .em{font-size:22px;width:36px}
+.item .t{flex:1;min-width:0}
+.item .t span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .amt{font-weight:600;margin:0 6px}
+.ib{width:40px;height:40px;border:0;background:none;color:var(--mu);font-size:16px}
+.day{display:flex;justify-content:space-between;margin:18px 2px 6px;color:var(--mu);font-size:12px}
+.bars .r{margin-bottom:14px}
+.bars .l{display:flex;justify-content:space-between;margin-bottom:6px}
+.trk{height:10px;background:var(--line);border-radius:5px;overflow:hidden}
+.trk i{display:block;height:100%;border-radius:5px}
+.pal{display:flex;margin:0 -4px}
+.pal button{flex:1;margin:0 4px;height:52px;border-radius:14px;border:2px solid var(--line);color:#fff;font:inherit;font-size:12px;font-weight:600}
+.pal button.on{border-color:var(--tx)}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav button{flex:1;height:58px;border:0;background:none;color:var(--mu);font:inherit;font-size:10px}
+nav button span{display:block;font-size:20px;margin-bottom:2px}
+nav button.on{color:var(--a2)}
+#toast{position:fixed;left:16px;right:16px;bottom:76px;padding:12px 14px;border-radius:12px;background:var(--tx);color:var(--bg);text-align:center;opacity:0;pointer-events:none;transition:opacity .2s}
+#toast.show{opacity:1}
+.nudge{background:var(--line);border-radius:14px;padding:12px;margin-bottom:14px}
+.nudge .btn{margin-top:10px;min-height:44px}
+</style>
+</head>
+<body>
+<main id="view"><p class="mu">Loading…</p></main>
+<nav id="nav"></nav>
+<div id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.js"></script>
+<script>
+// 1) Paste your Supabase values here (Project Settings > API)
+var CFG={url:'YOUR_SUPABASE_URL',key:'YOUR_SUPABASE_ANON_KEY'};
+
+var $=function(s){return document.querySelector(s)};
+var pad=function(n){return(n<10?'0':'')+n};
+var ymd=function(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+var parse=function(s){var p=s.split('-');return new Date(+p[0],+p[1]-1,+p[2])};
+var addDays=function(d,n){return new Date(d.getFullYear(),d.getMonth(),d.getDate()+n)};
+var monday=function(d){return addDays(d,-((d.getDay()+6)%7))};
+var money=function(n){return 'Rs.'+Number(n).toLocaleString('en-PK',{maximumFractionDigits:2})};
+var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
+var DN=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var short=function(d){return d.getDate()+' '+MN[d.getMonth()]};
+var S={tab:'home',set:{weekly_budget:1000,palette:localStorage.getItem('pal')||'neon'},cats:[],exp:[],sav:[],goal:null,cat:null};
+var sb,ready=false;
+var TABS=[['home','🏠','Home'],['history','🧾','History'],['stats','📊','Stats'],['savings','🐷','Savings'],['settings','⚙️','Settings']];
+
+function toast(m){var t=$('#toast');t.textContent=m;t.className='show';clearTimeout(toast.t);toast.t=setTimeout(function(){t.className=''},2600)}
+async function q(p){var r=await p;if(r.error){toast(r.error.message);throw r.error}return r.data}
+async function run(p,msg){await q(p);await load();if(msg)toast(msg)}
+function applyPalette(){document.documentElement.setAttribute('data-p',S.set.palette||'neon')}
+
+async function load(){
+  var r=await Promise.all([
+    q(sb.from('settings').select('*').eq('id',1).single()),
+    q(sb.from('categories').select('*').order('sort').order('id')),
+    q(sb.from('expenses').select('*').order('spent_on',{ascending:false}).order('id',{ascending:false})),
+    q(sb.from('savings').select('*').order('id',{ascending:false})),
+    q(sb.from('goals').select('*').eq('active',true).order('id',{ascending:false}).limit(1))
+  ]);
+  S.set=r[0];S.cats=r[1];S.exp=r[2];S.sav=r[3];S.goal=r[4][0]||null;
+  localStorage.setItem('pal',S.set.palette);
+  if(!S.cat||!S.cats.some(function(c){return c.id===S.cat}))S.cat=S.cats.length?S.cats[0].id:null;
+  ready=true;applyPalette();render();
+}
+
+var catOf=function(id){return S.cats.find(function(c){return c.id===id})||{name:'Other',emoji:'💸'}};
+var sum=function(a){return a.reduce(function(t,x){return t+Number(x.amount)},0)};
+var inRange=function(a,b){return S.exp.filter(function(x){return x.spent_on>=a&&x.spent_on<=b})};
+var weekSpent=function(m){return sum(inRange(ymd(m),ymd(addDays(m,6))))};
+
+/* ---------- views ---------- */
+function home(){
+  var today=new Date(),mon=monday(today),idx=(today.getDay()+6)%7,tStr=ymd(today);
+  var b=Number(S.set.weekly_budget),spent=weekSpent(mon),left=b-spent,daysLeft=7-idx;
+  var pct=Math.max(0,Math.min(100,spent/b*100));
+  var days=[0,1,2,3,4,5,6].map(function(i){return sum(inRange(ymd(addDays(mon,i)),ymd(addDays(mon,i))))});
+  var ref=Math.max.apply(null,days.concat([b/7*1.5]));
+  var strip=days.map(function(v,i){return '<div class="d'+(i===idx?' now':'')+'"><div class="bar"><i style="height:'+Math.round(v/ref*100)+'%"></i></div><b>'+DN[i][0]+'</b><small>'+(v?Math.round(v):'–')+'</small></div>'}).join('');
+  var sub=left>0?'About '+money(left/daysLeft)+' a day for the next '+daysLeft+(daysLeft>1?' days':' day'):'You are over this week’s budget';
+  var chips=S.cats.map(function(c){return '<button class="chip'+(c.id===S.cat?' on':'')+'" data-id="'+c.id+'" onclick="pick('+c.id+')">'+c.emoji+' '+esc(c.name)+'</button>'}).join('');
+  return '<section class="hero"><p class="mu">'+short(mon)+' – '+short(addDays(mon,6))+'</p>'
+   +'<p class="big'+(left<0?' neg':'')+'">'+money(left)+'</p><p class="mu">left of '+money(b)+' this week</p>'
+   +'<div class="meter'+(left<0?' over':'')+'"><i style="width:'+pct+'%"></i></div>'
+   +'<p>'+sub+'</p><p class="mu" style="margin-top:4px">Spent today: '+money(sum(inRange(tStr,tStr)))+'</p>'
+   +'<div class="strip">'+strip+'</div></section>'
+   +'<section class="card"><h2>Add expense</h2>'
+   +'<input id="amt" type="number" inputmode="decimal" step="any" min="0" placeholder="Amount (Rs.)">'
+   +'<div class="chips">'+chips+'</div>'
+   +'<input id="note" type="text" maxlength="80" placeholder="Note (optional)">'
+   +'<input id="dt" type="date" value="'+tStr+'">'
+   +'<button class="btn" onclick="addExp()">Add expense</button></section>';
+}
+function history(){
+  if(!S.exp.length)return '<section class="card"><h2>History</h2><p class="mu">No expenses yet. Add your first one on Home.</p></section>';
+  var out='<h2 style="margin:4px 2px">History</h2>',cur='';
+  S.exp.slice(0,200).forEach(function(x){
+    if(x.spent_on!==cur){cur=x.spent_on;var d=parse(cur);
+      out+='<div class="day"><span>'+DN[(d.getDay()+6)%7]+' '+short(d)+'</span><span>'+money(sum(S.exp.filter(function(y){return y.spent_on===cur})))+'</span></div>'}
+    var c=catOf(x.category_id);
+    out+='<div class="item card" style="padding:8px 12px;margin-bottom:8px"><div class="em">'+c.emoji+'</div><div class="t"><span>'+esc(x.note||c.name)+'</span>'+(x.note?'<span class="mu">'+esc(c.name)+'</span>':'')+'</div><div class="amt">'+money(x.amount)+'</div><button class="ib" onclick="editExp('+x.id+')">✎</button><button class="ib" onclick="delExp('+x.id+')">✕</button></div>';
+  });
+  return out;
+}
+function stats(){
+  var mon=monday(new Date()),b=Number(S.set.weekly_budget),wk=inRange(ymd(mon),ymd(addDays(mon,6)));
+  var by={};wk.forEach(function(x){var k=x.category_id||0;by[k]=(by[k]||0)+Number(x.amount)});
+  var keys=Object.keys(by).sort(function(a,c){return by[c]-by[a]}),tot=sum(wk),cols=['--a1','--a2','--a3','--a4'];
+  var cat=keys.length?keys.map(function(k,i){var c=catOf(+k||null);return '<div class="r"><div class="l"><span>'+c.emoji+' '+esc(c.name)+'</span><span>'+money(by[k])+'</span></div><div class="trk"><i style="width:'+Math.round(by[k]/tot*100)+'%;background:var('+cols[i%4]+')"></i></div></div>'}).join(''):'<p class="mu">Nothing spent yet this week.</p>';
+  var weeks=[0,1,2,3,4,5].map(function(i){var m=addDays(mon,-7*i),sp=weekSpent(m),over=sp>b;
+    return '<div class="r"><div class="l"><span>'+short(m)+(i===0?' (now)':'')+'</span><span style="color:'+(over?'var(--bad)':'var(--tx)')+'">'+money(sp)+' · '+(over?'over '+money(sp-b):money(b-sp)+' left')+'</span></div><div class="trk"><i style="width:'+Math.min(100,sp/b*100)+'%;background:'+(over?'var(--bad)':'linear-gradient(90deg,var(--a1),var(--a2))')+'"></i></div></div>'}).join('');
+  return '<section class="card bars"><h2>This week by category</h2>'+cat+'</section><section class="card bars"><h2>Last 6 weeks</h2>'+weeks+'<p class="mu">Compared with your current weekly budget.</p></section>';
+}
+function savings(){
+  var total=sum(S.sav),mon=monday(new Date()),lw=addDays(mon,-7),key=ymd(lw),b=Number(S.set.weekly_budget);
+  var lwTx=inRange(ymd(lw),ymd(addDays(lw,6))),left=b-sum(lwTx),note='Leftover from week of '+key;
+  var nudge=(lwTx.length&&left>0&&!S.sav.some(function(x){return x.note===note}))?'<div class="nudge"><p>Last week you had '+money(left)+' left.</p><button class="btn alt" onclick="addSav('+left+',\''+note+'\')">Add it to savings</button></div>':'';
+  var goal='';
+  if(S.goal){var p=Math.max(0,Math.min(100,total/S.goal.target*100));
+    goal='<section class="card"><h2>🎯 '+esc(S.goal.name)+'</h2><div class="meter"><i style="width:'+p+'%"></i></div><p>'+money(total)+' of '+money(S.goal.target)+(total>=S.goal.target?' – goal reached!':' · '+money(S.goal.target-total)+' to go')+'</p><button class="btn alt" style="margin-top:12px;min-height:44px" onclick="delGoal('+S.goal.id+')">Remove goal</button></section>';
+  }else goal='<section class="card"><h2>Set a savings goal</h2><input id="gn" type="text" maxlength="40" placeholder="What are you saving for?"><input id="gt" type="number" inputmode="decimal" placeholder="Target (Rs.)"><button class="btn" onclick="setGoal()">Set goal</button></section>';
+  var hist=S.sav.slice(0,15).map(function(x){return '<div class="item"><div class="t"><span>'+esc(x.note||(x.amount>0?'Added':'Withdrawn'))+'</span><span class="mu">'+short(new Date(x.created_at))+'</span></div><div class="amt" style="color:'+(x.amount<0?'var(--bad)':'var(--a2)')+'">'+(x.amount>0?'+':'')+money(x.amount)+'</div><button class="ib" onclick="delSav('+x.id+')">✕</button></div>'}).join('');
+  return '<section class="hero"><p class="mu">Saved so far</p><p class="big">'+money(total)+'</p></section>'+nudge+goal
+   +'<section class="card"><h2>Add or withdraw</h2><input id="sa" type="number" inputmode="decimal" placeholder="Amount (Rs.)"><input id="sn" type="text" maxlength="60" placeholder="Note (optional)"><div class="row2"><button class="btn" onclick="savBtn(1)">Add</button><button class="btn alt" onclick="savBtn(-1)">Withdraw</button></div></section>'
+   +(hist?'<section class="card"><h2>Recent</h2>'+hist+'</section>':'');
+}
+function settings(){
+  var P=[['neon','Neon'],['sunset','Sunset'],['mint','Mint'],['ocean','Ocean']],g={neon:'#8b5cf6,#22d3ee',sunset:'#fb923c,#f43f5e',mint:'#34d399,#a3e635',ocean:'#38bdf8,#6366f1'};
+  var pal=P.map(function(p){return '<button class="'+(S.set.palette===p[0]?'on':'')+'" style="background:linear-gradient(135deg,'+g[p[0]]+')" onclick="setPal(\''+p[0]+'\')">'+p[1]+'</button>'}).join('');
+  var cats=S.cats.map(function(c){return '<div class="item"><div class="em">'+c.emoji+'</div><div class="t">'+esc(c.name)+'</div><button class="ib" onclick="delCat('+c.id+')">✕</button></div>'}).join('');
+  return '<section class="card"><h2>Weekly budget</h2><input id="bud" type="number" inputmode="decimal" value="'+S.set.weekly_budget+'"><button class="btn" onclick="saveBud()">Save budget</button></section>'
+   +'<section class="card"><h2>Colours</h2><div class="pal">'+pal+'</div></section>'
+   +'<section class="card"><h2>Categories</h2>'+cats+'<div style="display:flex;margin-top:12px"><input id="cem" type="text" maxlength="2" placeholder="🙂" style="width:64px;margin-right:8px;text-align:center"><input id="cn" type="text" maxlength="24" placeholder="New category"></div><button class="btn alt" onclick="addCat()">Add category</button></section>';
+}
+var VIEWS={home:home,history:history,stats:stats,savings:savings,settings:settings};
+
+function render(){
+  $('#nav').innerHTML=TABS.map(function(t){return '<button class="'+(S.tab===t[0]?'on':'')+'" onclick="go(\''+t[0]+'\')"><span>'+t[1]+'</span>'+t[2]+'</button>'}).join('');
+  $('#view').innerHTML=VIEWS[S.tab]();
+}
+function go(t){S.tab=t;render();window.scrollTo(0,0)}
+
+/* ---------- actions ---------- */
+function pick(id){S.cat=id;document.querySelectorAll('.chip').forEach(function(c){c.classList.toggle('on',+c.dataset.id===id)})}
+function num(id){return parseFloat($(id).value)}
+function addExp(){
+  var a=num('#amt');if(!(a>0))return toast('Enter an amount above 0');
+  if(!S.cat)return toast('Add a category in Settings first');
+  run(sb.from('expenses').insert({amount:a,category_id:S.cat,note:$('#note').value.trim()||null,spent_on:$('#dt').value||ymd(new Date())}),'Expense added');
+}
+function editExp(id){
+  var x=S.exp.find(function(e){return e.id===id}),v=prompt('New amount (Rs.)',x.amount);if(v===null)return;
+  var n=parseFloat(v);if(!(n>0))return toast('Enter an amount above 0');
+  run(sb.from('expenses').update({amount:n}).eq('id',id),'Expense updated');
+}
+function delExp(id){if(confirm('Delete this expense?'))run(sb.from('expenses').delete().eq('id',id),'Expense deleted')}
+function addSav(a,note){run(sb.from('savings').insert({amount:a,note:note||null}),'Savings updated')}
+function savBtn(sign){
+  var a=num('#sa');if(!(a>0))return toast('Enter an amount above 0');
+  if(sign<0&&a>sum(S.sav))return toast('That is more than you have saved');
+  addSav(sign*a,$('#sn').value.trim());
+}
+function delSav(id){if(confirm('Delete this savings entry?'))run(sb.from('savings').delete().eq('id',id),'Entry deleted')}
+function setGoal(){
+  var n=$('#gn').value.trim(),t=num('#gt');if(!n||!(t>0))return toast('Enter a goal name and target');
+  run(sb.from('goals').insert({name:n,target:t}),'Goal set');
+}
+function delGoal(id){if(confirm('Remove this goal?'))run(sb.from('goals').delete().eq('id',id),'Goal removed')}
+function saveBud(){var v=num('#bud');if(!(v>0))return toast('Enter a budget above 0');run(sb.from('settings').update({weekly_budget:v}).eq('id',1),'Budget saved')}
+function setPal(p){S.set.palette=p;localStorage.setItem('pal',p);applyPalette();render();sb.from('settings').update({palette:p}).eq('id',1).then(function(r){if(r.error)toast(r.error.message)})}
+function addCat(){
+  var n=$('#cn').value.trim();if(!n)return toast('Enter a category name');
+  run(sb.from('categories').insert({name:n,emoji:$('#cem').value.trim()||'💸',sort:S.cats.length+1}),'Category added');
+}
+function delCat(id){if(confirm('Delete this category? Past expenses will show as Other.'))run(sb.from('categories').delete().eq('id',id),'Category deleted')}
+
+/* ---------- start ---------- */
+applyPalette();
+if(CFG.url.indexOf('YOUR_')===0){
+  $('#view').innerHTML='<section class="card"><h2>One setup step left</h2><p class="mu">Open index.html and paste your Supabase URL and anon key at the top of the script.</p></section>';
+}else{
+  sb=supabase.createClient(CFG.url,CFG.key);
+  load().catch(function(){if(!ready)$('#view').innerHTML='<section class="card"><h2>Could not load your data</h2><p class="mu">Check the Supabase URL and key, and that schema.sql was run.</p></section>'});
+}
+</script>
+</body>
+</html>
