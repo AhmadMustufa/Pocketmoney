@@ -383,7 +383,7 @@ function viewSav(id,ev){
   if(ev&&ev.target.closest('.ib'))return;
   var x=S.sav.find(function(e){return e.id===id});if(!x)return;
   var d=new Date(x.created_at),out=Number(x.amount)<0,m=monday(d);
-  showDetail('Savings entry','🐷','<span style="color:'+(out?'var(--bad)':'var(--a2)')+'">'+(out?'':'+')+money(x.amount)+'</span>',
+  showDetail('Savings entry','🏺','<span style="color:'+(out?'var(--bad)':'var(--a2)')+'">'+(out?'':'+')+money(x.amount)+'</span>',
     dr('Type',out?'Withdrawn':'Added to savings')+dr('Note',x.note?esc(x.note):'<span class="mu">–</span>')+dr('Date',fullDate(d)+', '+timeOf(d))
     +(out?dr('Week credit','Added to week of '+short(m)+' – '+short(addDays(m,6))):''));
 }
