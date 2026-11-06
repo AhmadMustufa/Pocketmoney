@@ -146,7 +146,7 @@ var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){r
 var DN=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 var short=function(d){return d.getDate()+' '+MN[d.getMonth()]};
 var fullDate=function(d){return DN[(d.getDay()+6)%7]+', '+d.getDate()+' '+MN[d.getMonth()]+' '+d.getFullYear()};
-var S={tab:'home',set:{weekly_budget:1000,palette:localStorage.getItem('pal')||'sensei'},cats:[],exp:[],inc:[],sav:[],goals:[],moves:[],pots:[],cat:null,pay:null,flt:'all',wk:0};
+var S={tab:'home',set:{weekly_budget:1000,palette:localStorage.getItem('pal')||'sensei'},cats:[],exp:[],inc:[],sav:[],goals:[],moves:[],pots:[],wallets:[],wm:[],wal:+localStorage.getItem('wal')||null,cat:null,pay:null,flt:'all',wk:0};
 var K={v:''},sb,ready=false;
 var TABS=[['home','🏠','Home'],['history','🧾','History'],['+'],['stats','📊','Stats'],['savings','🏺','Savings']];
 
@@ -164,9 +164,12 @@ async function load(){
     q(sb.from('goals').select('*').order('id',{ascending:false})),
     q(sb.from('income').select('*').order('received_on',{ascending:false}).order('id',{ascending:false})),
     q(sb.from('pots').select('*').order('id')),
-    q(sb.from('goal_moves').select('*').order('id',{ascending:false}))
+    q(sb.from('goal_moves').select('*').order('id',{ascending:false})),
+    q(sb.from('wallets').select('*').order('id')),
+    q(sb.from('wallet_moves').select('*').order('id',{ascending:false}))
   ]);
-  S.set=r[0];S.cats=r[1];S.exp=r[2];S.sav=r[3];S.goals=r[4].filter(function(g){return g.active});S.inc=r[5];S.pots=r[6];S.moves=r[7];
+  S.set=r[0];S.cats=r[1];S.exp=r[2];S.sav=r[3];S.goals=r[4].filter(function(g){return g.active});S.inc=r[5];S.pots=r[6];S.moves=r[7];S.wallets=r[8];S.wm=r[9];
+  if(!S.wallets.some(function(w){return w.id===S.wal}))S.wal=S.wallets.length?S.wallets[0].id:null;
   localStorage.setItem('pal',S.set.palette);
   if(!S.cat||!S.cats.some(function(c){return c.id===S.cat}))S.cat=S.cats.length?S.cats[0].id:null;
   ready=true;applyPalette();render();
@@ -188,6 +191,9 @@ var potBal=function(p){return potAcc(p)-potUsed(p)};
 var goalBal=function(g){return sum(S.moves.filter(function(m){return m.goal_id===g.id}))};
 var inGoals=function(){return S.goals.reduce(function(t,g){return t+goalBal(g)},0)};
 var freeSav=function(){return sum(S.sav)-inGoals()};
+var walOf=function(id){return S.wallets.find(function(w){return w.id===id})};
+var walBal=function(w){var mine=function(a,k){return a.filter(function(x){return x[k]===w.id})};return Number(w.base)+sum(mine(S.inc,'wallet_id'))-sum(mine(S.exp,'wallet_id'))+sum(mine(S.wm,'to_id'))-sum(mine(S.wm,'from_id'))};
+var walTotal=function(){return S.wallets.reduce(function(t,w){return t+walBal(w)},0)};
 function pend(){
   var mon=monday(new Date()),o=[];
   for(var i=1;i<=4;i++){var m=addDays(mon,-7*i),k=ymd(m),note='Leftover from week of '+k,left=r2(weekBudget(m)-weekSpent(m));
@@ -253,6 +259,7 @@ function home(){
    +'<p>'+sub+'</p><div class="strip">'+strip+'</div></section>'
    +nudge
    +'<div class="tiles"><button class="tile" onclick="expForm()"><span>🧾</span>Expense</button><button class="tile" onclick="incForm()"><span>💰</span>Extra money</button><button class="tile" onclick="savForm(1)"><span>🏺</span>Save</button></div>'
+   +'<div class="sec"><h3>Wallets · '+money(walTotal())+'</h3><button onclick="walMove(0)">Move money</button></div>'+walStrip()
    +'<div class="sec"><h3>Set-asides</h3><button onclick="go(\'savings\')">See all</button></div>'+potStrip()
    +'<div class="sec"><h3>Recent</h3><button onclick="go(\'history\')">See all</button></div>'+recent;
 }
@@ -305,6 +312,7 @@ function settings(){
   var row=function(em,t,v,f){return '<div class="item tap" onclick="'+f+'"><div class="em">'+em+'</div><div class="t"><span>'+t+'</span><span class="mu sm">'+v+'</span></div><span class="mu">›</span></div>'};
   return topbar('Settings','<button class="round" onclick="go(\'home\')">✕</button>')
    +row('💵','Weekly budget',money(S.set.weekly_budget)+(commit(monday(new Date()))?' · '+money(commit(monday(new Date())))+' set aside':''),'budForm()')
+   +row('👛','Wallets',S.wallets.length+' wallets · '+money(walTotal()),'walMgr()')
    +row('⛽','Weekly set-asides',S.pots.length+' active','potMgr()')
    +row('🏷️','Categories',S.cats.length+' categories','catMgr()')
    +row('🎨','Colours',esc(S.set.palette),'palSheet()');
@@ -319,7 +327,7 @@ function go(t){S.tab=t;if(t==='stats')S.wk=0;closeSheet();render();window.scroll
 /* ---------- popups ---------- */
 function menu(){
   var m=function(em,t,d,f){return '<button class="menu" onclick="'+f+'"><div class="em">'+em+'</div><div><b>'+t+'</b><small>'+d+'</small></div></button>'};
-  sheet('<h2>What would you like to do?</h2>'+m('🧾','Add expense','Spend from your week or a set-aside','expForm()')+m('💰','Add extra money','Boosts this week’s budget','incForm()')+m('🏺','Move money to savings','Or withdraw free savings','savForm(1)')+m('🎯','Put money in a goal','Keep it apart from free savings','goalPick()')+m('⛽','New weekly set-aside','e.g. fuel, set apart each week','potForm()')+m('✨','New goal','Save towards something specific','goalForm()'));
+  sheet('<h2>What would you like to do?</h2>'+m('🧾','Add expense','Spend from your week or a set-aside','expForm()')+m('💰','Add extra money','Boosts this week’s budget','incForm()')+m('🏺','Move money to savings','Or withdraw free savings','savForm(1)')+m('🎯','Put money in a goal','Keep it apart from free savings','goalPick()')+m('👛','Move money between wallets','Cash, apps, bank…','walMove(0)')+m('⛽','New weekly set-aside','e.g. fuel, set apart each week','potForm()')+m('✨','New goal','Save towards something specific','goalForm()'));
 }
 function weekSheet(){
   var mon=monday(new Date()),a=ymd(mon),e=ymd(addDays(mon,6)),ex=extraIn(a,e),c=commit(mon),sp=weekSpent(mon),b=weekBudget(mon);
@@ -345,18 +353,18 @@ function expForm(potId){
   S.pay=potId||null;
   var cats=S.cats.map(function(c){return '<button class="chip'+(c.id===S.cat?' on':'')+'" data-c="'+c.id+'" onclick="pickCat('+c.id+')">'+c.emoji+' '+esc(c.name)+'</button>'}).join('');
   var pays='<button class="chip'+(!S.pay?' on':'')+'" data-p="0" onclick="pickPay(0)">💵 Weekly money</button>'+S.pots.map(function(p){return '<button class="chip'+(S.pay===p.id?' on':'')+'" data-p="'+p.id+'" onclick="pickPay('+p.id+')">'+p.emoji+' '+esc(p.name)+'</button>'}).join('');
-  modal('Add expense',amtBlock('')+(S.pots.length?lb('Pay from')+'<div class="chips">'+pays+'</div>':'')+lb('Category')+'<div class="chips">'+cats+'</div>'+txt('f1','',80,'Note (optional)')+'<input id="f2" type="date" value="'+ymd(new Date())+'">','Add expense',function(){
+  modal('Add expense',amtBlock('')+(S.pots.length?lb('Pay from')+'<div class="chips">'+pays+'</div>':'')+walChips('Wallet')+lb('Category')+'<div class="chips">'+cats+'</div>'+txt('f1','',80,'Note (optional)')+'<input id="f2" type="date" value="'+ymd(new Date())+'">','Add expense',function(){
     if(!amt())return toast('Enter an amount above 0');
     if(!S.cat)return toast('Add a category in Settings first');
-    done(sb.from('expenses').insert({amount:amt(),category_id:S.cat,pot_id:S.pay,note:gv('#f1')||null,spent_on:$('#f2').value||ymd(new Date())}),'Expense added');
+    done(sb.from('expenses').insert({amount:amt(),category_id:S.cat,pot_id:S.pay,wallet_id:S.wal||null,note:gv('#f1')||null,spent_on:$('#f2').value||ymd(new Date())}),'Expense added');
   });
 }
 function pickCat(id){S.cat=id;document.querySelectorAll('[data-c]').forEach(function(c){c.classList.toggle('on',+c.dataset.c===id)})}
 function pickPay(id){S.pay=id||null;document.querySelectorAll('[data-p]').forEach(function(c){c.classList.toggle('on',+c.dataset.p===id)})}
 function incForm(){
-  modal('Extra money',amtBlock('')+txt('f1','',60,'Where from? (optional)')+'<input id="f2" type="date" value="'+ymd(new Date())+'">','Add money',function(){
+  modal('Extra money',amtBlock('')+walChips('Received in')+txt('f1','',60,'Where from? (optional)')+'<input id="f2" type="date" value="'+ymd(new Date())+'">','Add money',function(){
     if(!amt())return toast('Enter an amount above 0');
-    done(sb.from('income').insert({amount:amt(),note:gv('#f1')||null,received_on:$('#f2').value||ymd(new Date())}),'Extra money added');
+    done(sb.from('income').insert({amount:amt(),wallet_id:S.wal||null,note:gv('#f1')||null,received_on:$('#f2').value||ymd(new Date())}),'Extra money added');
   });
 }
 function savForm(sign){
@@ -426,26 +434,26 @@ var btn=function(t,f,c){return '<button class="btn '+(c||'alt')+' sm2" onclick="
 var stamp=function(x){return x.created_at?dr('Added on',fullDate(new Date(x.created_at))):''};
 function viewExp(id){
   var x=S.exp.find(function(e){return e.id===id});if(!x)return;var c=catOf(x.category_id),p=x.pot_id?potOf(x.pot_id):null;
-  detail('Expense',p?p.emoji:c.emoji,money(x.amount),dr('Category',esc(c.name))+dr('Paid from',p?esc(p.name)+' set-aside':'Weekly money')+dr('Note',x.note?esc(x.note):dash)+dr('Date',fullDate(parse(x.spent_on)))+stamp(x),btn('Edit','editExp('+id+')')+btn('Delete','ask(\'Delete expense?\',\'This can’t be undone.\',\'Delete\',function(){done(sb.from(\'expenses\').delete().eq(\'id\','+id+'),\'Expense deleted\')})','bad'));
+  detail('Expense',p?p.emoji:c.emoji,money(x.amount),dr('Category',esc(c.name))+dr('Paid from',p?esc(p.name)+' set-aside':'Weekly money')+walRow(x)+dr('Note',x.note?esc(x.note):dash)+dr('Date',fullDate(parse(x.spent_on)))+stamp(x),btn('Edit','editExp('+id+')')+btn('Delete','ask(\'Delete expense?\',\'This can’t be undone.\',\'Delete\',function(){done(sb.from(\'expenses\').delete().eq(\'id\','+id+'),\'Expense deleted\')})','bad'));
 }
 function editExp(id){
   var x=S.exp.find(function(e){return e.id===id});
   var o='<option value="">💸 Other</option>'+S.cats.map(function(c){return '<option value="'+c.id+'"'+(c.id===x.category_id?' selected':'')+'>'+c.emoji+' '+esc(c.name)+'</option>'}).join('');
   var po='<option value="">💵 Weekly money</option>'+S.pots.map(function(p){return '<option value="'+p.id+'"'+(p.id===x.pot_id?' selected':'')+'>'+p.emoji+' '+esc(p.name)+'</option>'}).join('');
-  modal('Edit expense',amtBlock(x.amount)+lb('Category')+'<select id="f2">'+o+'</select>'+lb('Paid from')+'<select id="f5">'+po+'</select>'+txt('f3',x.note,80,'Note')+'<input id="f4" type="date" value="'+x.spent_on+'">','Save changes',function(){
+  modal('Edit expense',amtBlock(x.amount)+lb('Category')+'<select id="f2">'+o+'</select>'+lb('Paid from')+'<select id="f5">'+po+'</select>'+lb('Wallet')+'<select id="f6">'+walOpts(x.wallet_id)+'</select>'+txt('f3',x.note,80,'Note')+'<input id="f4" type="date" value="'+x.spent_on+'">','Save changes',function(){
     if(!amt())return toast('Enter an amount above 0');if(!$('#f4').value)return toast('Pick a date');
-    done(sb.from('expenses').update({amount:amt(),category_id:parseInt($('#f2').value)||null,pot_id:parseInt($('#f5').value)||null,note:gv('#f3')||null,spent_on:$('#f4').value}).eq('id',id),'Expense updated');
+    done(sb.from('expenses').update({amount:amt(),category_id:parseInt($('#f2').value)||null,pot_id:parseInt($('#f5').value)||null,wallet_id:parseInt($('#f6').value)||null,note:gv('#f3')||null,spent_on:$('#f4').value}).eq('id',id),'Expense updated');
   });
 }
 function viewInc(id){
   var x=S.inc.find(function(e){return e.id===id});if(!x)return;
-  detail('Extra money','💰','<span style="color:var(--a2)">+'+money(x.amount)+'</span>',dr('Where from',x.note?esc(x.note):dash)+dr('Date received',fullDate(parse(x.received_on)))+stamp(x),btn('Edit','editInc('+id+')')+btn('Delete','ask(\'Delete entry?\',\'This lowers that week’s budget.\',\'Delete\',function(){done(sb.from(\'income\').delete().eq(\'id\','+id+'),\'Entry deleted\')})','bad'));
+  detail('Extra money','💰','<span style="color:var(--a2)">+'+money(x.amount)+'</span>',dr('Where from',x.note?esc(x.note):dash)+walRow(x)+dr('Date received',fullDate(parse(x.received_on)))+stamp(x),btn('Edit','editInc('+id+')')+btn('Delete','ask(\'Delete entry?\',\'This lowers that week’s budget.\',\'Delete\',function(){done(sb.from(\'income\').delete().eq(\'id\','+id+'),\'Entry deleted\')})','bad'));
 }
 function editInc(id){
   var x=S.inc.find(function(e){return e.id===id});
-  modal('Edit extra money',amtBlock(x.amount)+txt('f2',x.note,60,'Where from?')+'<input id="f3" type="date" value="'+x.received_on+'">','Save changes',function(){
+  modal('Edit extra money',amtBlock(x.amount)+txt('f2',x.note,60,'Where from?')+lb('Received in')+'<select id="f4">'+walOpts(x.wallet_id)+'</select><input id="f3" type="date" value="'+x.received_on+'">','Save changes',function(){
     if(!amt())return toast('Enter an amount above 0');if(!$('#f3').value)return toast('Pick a date');
-    done(sb.from('income').update({amount:amt(),note:gv('#f2')||null,received_on:$('#f3').value}).eq('id',id),'Entry updated');
+    done(sb.from('income').update({amount:amt(),note:gv('#f2')||null,wallet_id:parseInt($('#f4').value)||null,received_on:$('#f3').value}).eq('id',id),'Entry updated');
   });
 }
 function viewSav(id){
@@ -485,6 +493,48 @@ function finishGoal(id){
   });
 }
 function delGoal(id){var g=S.goals.find(function(x){return x.id===id});ask('Delete goal?',money(goalBal(g))+' goes back to your free savings.','Delete',function(){done(sb.from('goals').delete().eq('id',id),'Goal deleted')})}
+
+/* ---------- wallets ---------- */
+function walRow(x){var w=x.wallet_id&&walOf(x.wallet_id);return w?dr('Wallet',w.emoji+' '+esc(w.name)):''}
+function walOpts(sel){return '<option value="">No wallet</option>'+S.wallets.map(function(w){return '<option value="'+w.id+'"'+(w.id===sel?' selected':'')+'>'+w.emoji+' '+esc(w.name)+'</option>'}).join('')}
+function walChips(t){
+  if(!S.wallets.length)return '';
+  return lb(t)+'<div class="chips">'+S.wallets.map(function(w){return '<button class="chip'+(w.id===S.wal?' on':'')+'" data-w="'+w.id+'" onclick="pickWal('+w.id+')">'+w.emoji+' '+esc(w.name)+'</button>'}).join('')+'</div>';
+}
+function pickWal(id){S.wal=id;localStorage.setItem('wal',id);document.querySelectorAll('[data-w]').forEach(function(c){c.classList.toggle('on',+c.dataset.w===id)})}
+function walStrip(){
+  return '<div class="scroll">'+S.wallets.map(function(w){var b=walBal(w);return '<div class="pc tap" onclick="viewWal('+w.id+')"><div class="em">'+w.emoji+'</div><b>'+esc(w.name)+'</b><div class="v"'+(b<0?' style="color:var(--bad)"':'')+'>'+money(b)+'</div></div>'}).join('')+'<div class="pc add tap" onclick="walForm()"><div class="em">＋</div><small>New wallet</small></div></div>';
+}
+function walMgr(){
+  sheet('<h2>Wallets</h2>'+(S.wallets.map(function(w){return '<div class="item tap" onclick="viewWal('+w.id+')"><div class="em">'+w.emoji+'</div><div class="t"><span>'+esc(w.name)+'</span></div><div class="amt">'+money(walBal(w))+'</div></div>'}).join('')||'<p class="mu" style="margin-bottom:12px">Add the places you keep money: apps, cash, a bank…</p>')+'<button class="btn" onclick="walForm()">New wallet</button>');
+}
+function walForm(id){
+  var w=id?walOf(id):null;
+  modal(w?'Edit wallet':'New wallet',lb('Emoji and name')+'<div style="display:flex"><input id="f0" type="text" maxlength="2" value="'+esc(w?w.emoji:'👛')+'" style="width:64px;margin-right:8px;text-align:center">'+txt('f1',w&&w.name,24,'e.g. Cash, JazzCash')+'</div>'+lb(w?'Current balance':'Money in it now')+amtBlock(w?r2(walBal(w)):''),w?'Save changes':'Add wallet',function(){
+    var n=gv('#f1'),e=gv('#f0')||'👛',v=amt();if(!n)return toast('Enter a wallet name');
+    if(!w)return done(sb.from('wallets').insert({name:n,emoji:e,base:v}),'Wallet added');
+    done(sb.from('wallets').update({name:n,emoji:e,base:r2(Number(w.base)+v-walBal(w))}).eq('id',id),'Wallet updated');
+  });
+}
+function walMove(mode,from){
+  if(S.wallets.length<(mode?1:2))return walForm();
+  var o=function(sel){return S.wallets.map(function(w){return '<option value="'+w.id+'"'+(w.id===sel?' selected':'')+'>'+w.emoji+' '+esc(w.name)+' ('+money(walBal(w))+')</option>'}).join('')};
+  var f=from||S.wallets[0].id,t=(S.wallets.find(function(w){return w.id!==f})||{}).id;
+  modal(mode>0?'Add money to a wallet':'Move between wallets',amtBlock('')+(mode<=0?'<div class="chips"><button class="chip" onclick="maxAmt()">Use whole balance</button></div>'+lb('From')+'<select id="wf">'+o(f)+'</select>':'')+(mode>=0?lb(mode>0?'Into':'To')+'<select id="wt">'+o(mode>0?f:t)+'</select>':'')+txt('f1','',60,'Note (optional)'),'Confirm',function(){
+    var a=amt(),fi=mode<=0?+$('#wf').value:null,ti=mode>=0?+$('#wt').value:null;
+    if(!a)return toast('Enter an amount above 0');
+    if(fi&&ti&&fi===ti)return toast('Pick two different wallets');
+    if(fi&&a>walBal(walOf(fi)))return toast('That wallet only holds '+money(walBal(walOf(fi))));
+    done(sb.from('wallet_moves').insert({from_id:fi,to_id:ti,amount:a,note:gv('#f1')||null}),mode>0?'Money added':'Money moved');
+  });
+}
+function maxAmt(){var w=walOf(+$('#wf').value);if(w){K.v=String(Math.max(0,r2(walBal(w))));$('#ad').textContent='Rs.'+K.v}}
+function viewWal(id){
+  var w=walOf(id);if(!w)return;var b=walBal(w);
+  var l=S.wm.filter(function(m){return m.from_id===id||m.to_id===id}).slice(0,4).map(function(m){var i=m.to_id===id,o=walOf(i?m.from_id:m.to_id);return dr(short(new Date(m.created_at))+' · '+(i?'from ':'to ')+(o?esc(o.name):'outside'),'<span style="color:'+(i?'var(--a2)':'var(--bad)')+'">'+(i?'+':'−')+money(m.amount)+'</span>')}).join('');
+  detail(esc(w.name),w.emoji,'<span'+(b<0?' style="color:var(--bad)"':'')+'>'+money(b)+'</span>',dr('Spent from it',money(sum(S.exp.filter(function(x){return x.wallet_id===id}))))+dr('Received into it',money(sum(S.inc.filter(function(x){return x.wallet_id===id}))))+(l?'<p class="mu sm" style="margin-top:10px">Latest transfers</p>'+l:'')+'<div class="row2" style="margin:12px 0 8px">'+btn('Move out','walMove(0,'+id+')','')+btn('Add money','walMove(1,'+id+')')+'</div>',btn('Edit','walForm('+id+')')+btn('Delete','delWal('+id+')','bad'));
+}
+function delWal(id){ask('Delete wallet?','Its transfers are removed and past expenses stay but lose their wallet tag.','Delete',function(){done(sb.from('wallets').delete().eq('id',id),'Wallet deleted')})}
 
 /* ---------- start ---------- */
 applyPalette();
